@@ -1,148 +1,457 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import * as Papa from "papaparse";
-import { createClient } from '@supabase/supabase-js';
-
-// --- Supabase 連線設定 ---
-const supabaseUrl = 'https://gsrhvjxodnjsqaosgegl.supabase.co';
-const supabaseKey = 'sb_publishable_n23wUeYIP_WCd1PUbrCmeg_1zbJwqSp';
-const supabase = createClient(supabaseUrl, supabaseKey);
-const SKEY = "main"; 
-
-const loadDB = async () => { 
-  try { 
-    const { data, error } = await supabase.from('app_data').select('data').eq( 'id', SKEY).single();
-    if (error) throw error;
-    return data ? data.data : null;
-  } catch { return null; } 
-};
-
-const saveDB = async (d) => { 
-  try { 
-    const { error } = await supabase.from('app_data').upsert({ id: SKEY, data: d, updated_at: new Date().toISOString() });
-    if (error) throw error;
-    return true; 
-  } catch { return false; } 
-};
-
-const td = () => new Date().toISOString().split("T")[0];
-const uid = () => Math.random().toString(36).slice(2, 10);
-const HB = () => ({ background: "rgba(255,255,255,.15)", border: "1px solid rgba(255,255,255,.2)", color: "#fff", borderRadius: 6, padding: "4px 8px", cursor: "pointer", fontSize: 10, fontWeight: 600 });
-const S = {
-  i: { width: "100%", padding: "8px 10px", border: "1.5px solid #cbd5e1", borderRadius: 7, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" },
-  l: { display: "block", fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 3 },
-  b: (bg, c) => ({ padding: "8px 14px", background: bg, color: c || "#fff", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }),
-  f: { marginBottom: 12 },
-};
-
-function Modal({ open, onClose, title, children }) {
-  if (!open) return null;
-  return <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,20,40,.45)", backdropFilter: "blur(3px)" }} onClick={onClose}>
-    <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 14, padding: "22px 24px", width: 450, maxWidth: "94vw", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,40,80,.18)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}><h3 style={{ margin: 0, fontSize: 16 }}>{title}</h3><button onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#94a3b8" }}>×</button></div>
-      {children}
-    </div></div>;
-}
-
-function Login({ techs, adminPin, adminLabel, appName, logo, onLogin }) {
-  const [acc, setAcc] = useState(""); const [pin, setPin] = useState(""); const [err, setErr] = useState(""); const [showF, setShowF] = useState(false);
-  const tryLogin = () => {
-    const inputAcc = acc.trim().toLowerCase();
-    if (inputAcc === "admin" || inputAcc === adminLabel.toLowerCase()) {
-      if (pin === adminPin) onLogin({ role: "admin" }); else setErr("密碼錯誤");
-    } else {
-      const t = techs.find(x => x.name.toLowerCase() === inputAcc);
-      if (t && t.pin === pin) onLogin({ role: "tech", techId: t.id });
-      else setErr("帳號或密碼錯誤");
+{
+  "tasks": [
+    {
+      "id": "gimutsgl",
+      "date": "2026-03-29",
+      "done": false,
+      "note": "",
+      "time": "09:00",
+      "techId": "9mt6dztf",
+      "customerId": "m66zisfw",
+      "serviceType": "mt"
+    },
+    {
+      "id": "fy3wgrgw",
+      "date": "2026-03-29",
+      "done": false,
+      "note": "",
+      "time": "00:00",
+      "techId": "n1zposo1",
+      "customerId": "qqvovjem",
+      "serviceType": "mt"
+    },
+    {
+      "id": "6eznt4j9",
+      "date": "2026-03-29",
+      "done": false,
+      "note": "",
+      "time": "09:00",
+      "techId": "9mt6dztf",
+      "customerId": "jm0n28pr",
+      "serviceType": "mt"
+    },
+    {
+      "id": "8b2bnerp",
+      "date": "2026-03-30",
+      "done": false,
+      "note": "",
+      "time": "09:00",
+      "techId": "9mt6dztf",
+      "customerId": "m66zisfw",
+      "serviceType": "ur"
+    },
+    {
+      "id": "24nsi6s3",
+      "date": "2026-03-29",
+      "done": false,
+      "note": "",
+      "time": "09:00",
+      "techId": "n1zposo1",
+      "customerId": "jm0n28pr",
+      "serviceType": "ur"
     }
-  };
-  return <div style={{ fontFamily: "'Noto Sans TC',sans-serif", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0c4a6e" }}>
-    <div style={{ background: "#fff", borderRadius: 18, padding: "32px 28px", width: 340, boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
-      <div style={{ textAlign: "center", marginBottom: 24 }}>
-        {logo && <img src={logo} style={{ maxHeight: 60, marginBottom: 12, borderRadius: 8 }} />}
-        <div style={{ fontSize: 20, fontWeight: 900, color: "#0c4a6e" }}>{appName}</div>
-      </div>
-      <div style={S.f}><label style={S.l}>帳號</label><input style={S.i} value={acc} onChange={e => setAcc(e.target.value)} placeholder="admin 或 姓名" /></div>
-      <div style={S.f}><label style={S.l}>PIN 碼</label><input type="password" style={{ ...S.i, letterSpacing: 4 }} value={pin} onChange={e => setPin(e.target.value)} onKeyDown={e => e.key === "Enter" && tryLogin()} /></div>
-      {err && <div style={{ color: "#dc2626", fontSize: 12, marginBottom: 12, textAlign: "center" }}>{err}</div>}
-      <button onClick={tryLogin} style={{ ...S.b("#0e7490"), width: "100%", justifyContent: "center" }}>登入</button>
-      <button onClick={() => setShowF(true)} style={{ background: "none", border: "none", width: "100%", marginTop: 15, fontSize: 11, color: "#94a3b8", textDecoration: "underline", cursor: "pointer" }}>忘記密碼？</button>
-    </div>
-    <Modal open={showF} onClose={() => setShowF(false)} title="忘記密碼">
-        <p style={{ fontSize: 14 }}>請聯繫管理員 <b>{adminLabel}</b> 為您重設 4 位數 PIN 碼。</p>
-        <button onClick={() => setShowF(false)} style={S.b("#0e7490")}>確定</button>
-    </Modal>
-  </div>;
-}
-
-export default function App() {
-  const [data, setData] = useState(null); const [session, setSession] = useState(null); const [tab, setTab] = useState("schedule");
-  const [saveStatus, setSaveStatus] = useState(""); const [modals, setModals] = useState({}); const [editing, setEditing] = useState({});
-  const ready = useRef(false);
-
-  useEffect(() => { loadDB().then(d => { setData(d); setTimeout(() => { ready.current = true; }, 500); }); }, []);
-  useEffect(() => { if (ready.current && data) { 
-    setSaveStatus("saving");
-    saveDB(data).then(ok => { setSaveStatus(ok ? "saved" : "error"); setTimeout(() => setSaveStatus(""), 3000); });
-  } }, [data]);
-
-  if (!data) return <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>連線中...</div>;
-  if (!session) return <Login techs={data.technicians} adminPin={data.adminPin} adminLabel={data.adminLabel} appName={data.appName} logo={data.logo} onLogin={setSession} />;
-
-  const isAdmin = session.role === "admin" || data.technicians.find(t => t.id === session.techId)?.isAdmin;
-  const upd = (k, v) => setData(p => ({ ...p, [k]: typeof v === 'function' ? v(p[k]) : v }));
-
-  return <div style={{ fontFamily: "'Noto Sans TC',sans-serif", background: "#f0f9ff", minHeight: "100vh" }}>
-    {saveStatus && <div style={{ position: "fixed", bottom: 12, right: 12, zIndex: 2000, padding: "8px 14px", borderRadius: 8, fontSize: 12, background: "#fff", border: "1px solid #ddd" }}>
-      {saveStatus === "saving" ? "🔄 同步中..." : saveStatus === "saved" ? "✅ 同步完成" : "❌ 同步失敗"}
-    </div>}
-    
-    <div style={{ background: "linear-gradient(135deg,#0c4a6e,#0e7490)", padding: "12px 18px", color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{data.logo && <img src={data.logo} style={{ height: 24 }} />} <b>{data.appName}</b></div>
-      <div style={{ display: "flex", gap: 5 }}>
-        {isAdmin && <button onClick={() => setModals({ tech: true })} style={HB()}>技師管理</button>}
-        {isAdmin && <button onClick={() => setModals({ cfg: true })} style={HB()}>系統設定</button>}
-        <button onClick={() => setSession(null)} style={HB()}>登出</button>
-      </div>
-    </div>
-
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: 20 }}>
-       {/* 這裡可以依序加入你的排程 UI */}
-       <p>目前系統已採用 AOT 版本格式，您可以開始操作。</p>
-    </div>
-
-    {/* 技師指派密碼彈窗 */}
-    <Modal open={modals.tech} onClose={() => setModals({})} title="技師管理與密碼指派">
-       {data.technicians.map((t, idx) => (
-         <div key={t.id} style={{ border: "1px solid #eee", padding: 10, borderRadius: 8, marginBottom: 10 }}>
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-              <input style={{ ...S.i, flex: 2 }} value={t.name} onChange={e => {
-                const n = [...data.technicians]; n[idx].name = e.target.value;
-                upd("technicians", n);
-              }} />
-              <input style={{ ...S.i, flex: 1 }} placeholder="PIN" value={t.pin} onChange={e => {
-                const n = [...data.technicians]; n[idx].pin = e.target.value.replace(/\D/g,'');
-                upd("technicians", n);
-              }} />
-            </div>
-            <label style={{ fontSize: 12 }}><input type="checkbox" checked={t.isAdmin} onChange={e => {
-              const n = [...data.technicians]; n[idx].isAdmin = e.target.checked;
-              upd("technicians", n);
-            }} /> 管理員權限</label>
-         </div>
-       ))}
-       <button onClick={() => setModals({})} style={S.b("#0e7490")}>關閉並儲存</button>
-    </Modal>
-
-    {/* 系統與備份彈窗 */}
-    <Modal open={modals.cfg} onClose={() => setModals({})} title="系統設定">
-       <div style={S.f}><label style={S.l}>系統名稱</label><input style={S.i} value={data.appName} onChange={e => upd("appName", e.target.value)} /></div>
-       <div style={S.f}><label style={S.l}>Logo URL (或上傳)</label><input type="file" onChange={e => {
-         const r = new FileReader(); r.onload = ev => upd("logo", ev.target.result); r.readAsDataURL(e.target.files[0]);
-       }} /></div>
-       <button onClick={() => {
-         const b = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-         const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = "backup.json"; a.click();
-       }} style={S.b("#64748b")}>💾 下載 JSON 備份</button>
-    </Modal>
-  </div>;
+  ],
+  "appName": "AOT排班系統",
+  "reports": {},
+  "adminPin": "0000",
+  "customers": [
+    {
+      "id": "m66zisfw",
+      "fax": "",
+      "code": "008",
+      "name": "莫生",
+      "note": "",
+      "email": "lanwendy@netvigator.com",
+      "tanks": 1,
+      "address": "House A, 85-87 Ma Ling Path, Kau To Shan, Shatin, N.T.",
+      "contact": "Wendy Lan",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "23632826"
+    },
+    {
+      "id": "xi9n6gzm",
+      "fax": "26140946",
+      "code": "028",
+      "name": "施他彿",
+      "note": "",
+      "email": "Maggiema@pihlgp.com",
+      "tanks": 1,
+      "address": "",
+      "contact": "Maggie Ma",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "24243326"
+    },
+    {
+      "id": "0fa67zzr",
+      "fax": "",
+      "code": "029",
+      "name": "粉嶺牽陳太",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "粉嶺牽晴間2座31D",
+      "contact": "陳太",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "96226063"
+    },
+    {
+      "id": "z6r3nzbv",
+      "fax": "",
+      "code": "058",
+      "name": "ROYAL KING INTERNATIONAL LIMITED (繆氏)",
+      "note": "",
+      "email": "cheng@eikowada.com.hk",
+      "tanks": 1,
+      "address": "1/F, Sun Kwong Industrial Bldg, 1059-1061, Tung Chau West St, Lai Chi Kok, Kowoon",
+      "contact": "Mr. Cheng",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "27420431"
+    },
+    {
+      "id": "08uvye6a",
+      "fax": "25763385",
+      "code": "066",
+      "name": "優雅閣業主立案法團",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "大坑道 60 號優雅閣",
+      "contact": "Suki",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "25777430"
+    },
+    {
+      "id": "3piajip6",
+      "fax": "",
+      "code": "088",
+      "name": "屯門建榮",
+      "note": "",
+      "email": "candy@laicheung.com.hk\nsummertsang@laicheung.com.hk",
+      "tanks": 1,
+      "address": "屯門建榮街 33 號建榮工業大廈 9 樓 1 室",
+      "contact": "曾小姐",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "59785368"
+    },
+    {
+      "id": "dz1vvx5e",
+      "fax": "27353922",
+      "code": "098",
+      "name": "JP Workshop Interiors Ltd (金𩣑花園)",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "Unit A-B, 23/F, YHC Tower, No.1 Shueng Yuet Road, Kowloon Bay, Kowloon, Hong Kong",
+      "contact": "Pan Ng",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "27353928/ 93591349"
+    },
+    {
+      "id": "jm0n28pr",
+      "fax": "",
+      "code": "252",
+      "name": "九龍塘基督教中心幼稚園",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "九龍塘窩打老道103號地下",
+      "contact": "鄧老師",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "67570237"
+    },
+    {
+      "id": "d9gsw4nf",
+      "fax": "",
+      "code": "263",
+      "name": "263",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "21科進路逸瓏灣2期 T9 6樓 E室",
+      "contact": "許先生",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "93380860"
+    },
+    {
+      "id": "942ciyqz",
+      "fax": "",
+      "code": "280",
+      "name": "China Overseas Holdings Limited",
+      "note": "",
+      "email": "go-billing@cohl.com",
+      "tanks": 1,
+      "address": "10/F., Pacific Place, 1 Queen’s Road East",
+      "contact": "Rosanna Yuen",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "2723 7385"
+    },
+    {
+      "id": "evdvvqis",
+      "fax": "",
+      "code": "286",
+      "name": "Guna technologies ltd",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "新蒲崗大有街31號善美工業大廈1303室",
+      "contact": "Alex Chung",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "93193269"
+    },
+    {
+      "id": "35shxy3h",
+      "fax": "",
+      "code": "289",
+      "name": "289",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "擎天半島1座76樓D室",
+      "contact": "郝先生",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "5313 5896"
+    },
+    {
+      "id": "1war3xol",
+      "fax": "",
+      "code": "293",
+      "name": "豐泰米行(香港)有限公司",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "青衣長好街8號時力工業大廈1樓B室",
+      "contact": "黃小姐",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "24356680"
+    },
+    {
+      "id": "a4pts67v",
+      "fax": "",
+      "code": "295",
+      "name": "健采集團有限公司",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "火炭黃竹洋街富昌中心6樓B&C室",
+      "contact": "黃小姐/ 梁小姐",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "98764808/ 60930213"
+    },
+    {
+      "id": "22w11fvz",
+      "fax": "",
+      "code": "297",
+      "name": "297",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "薄扶林摩星嶺道 61 號福利別墅第四座",
+      "contact": "陳太",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "5562 3228"
+    },
+    {
+      "id": "qqvovjem",
+      "fax": "",
+      "code": "298",
+      "name": "Toyzeroplus Ltd",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "",
+      "contact": "Ms May Chan",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "35802770"
+    },
+    {
+      "id": "cu2jdxh6",
+      "fax": "",
+      "code": "299",
+      "name": "悠閑木匠",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "元朗蝶翠峰13座10C室",
+      "contact": "Anita Chung",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "9287 9488"
+    },
+    {
+      "id": "0e4sj1fm",
+      "fax": "",
+      "code": "301",
+      "name": "301",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "淺水灣道129號4座11樓",
+      "contact": "Zhong xiao rui",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "5525 2382"
+    },
+    {
+      "id": "d40n04r3",
+      "fax": "",
+      "code": "308",
+      "name": "308",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "House 12, Rosecliff, 20 Tai Tam Road, HK",
+      "contact": "Mary Chan",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "6712 0082"
+    },
+    {
+      "id": "8ui312b5",
+      "fax": "",
+      "code": "312",
+      "name": "Delta Pyramax Company Limited",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "九龍灣宏光道39號宏天廣場28樓",
+      "contact": "Ms. Regina Wong",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "25112118"
+    },
+    {
+      "id": "u71oyyx5",
+      "fax": "",
+      "code": "319",
+      "name": "319",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "葵涌和宜合道恆利中心 11 樓",
+      "contact": "麥先生",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "9611 5418"
+    },
+    {
+      "id": "rh9e2bwq",
+      "fax": "",
+      "code": "325",
+      "name": "Trend Up Investment (HK) Limited",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "Room 2306-2313, 23/F, The Center, 99 Queen's Road Central, Central",
+      "contact": "Stephen Tong",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "‪5188 1428‬"
+    },
+    {
+      "id": "11s4lxvb",
+      "fax": "",
+      "code": "335",
+      "name": "都會駅",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "將軍澳調景嶺都會駅1座59樓H室",
+      "contact": "Joyce Hung",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "6339 9419"
+    },
+    {
+      "id": "tlxu011o",
+      "fax": "",
+      "code": "336",
+      "name": "竹林明堂護理安老院",
+      "note": "",
+      "email": "",
+      "tanks": 1,
+      "address": "5 ShaWan Drive, Pok Fu Lam, H.K.",
+      "contact": "Caden Lo",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "2817 2281"
+    },
+    {
+      "id": "g7wv2dha",
+      "fax": "",
+      "code": "339",
+      "name": "Reitar Logtech Group Limited",
+      "note": "",
+      "email": "admin@reitar.io",
+      "tanks": 1,
+      "address": "",
+      "contact": "Ms. Leung",
+      "sitePhone": "",
+      "siteContact": "",
+      "contactPhone": "34613652"
+    }
+  ],
+  "recurring": [],
+  "adminLabel": "Celine",
+  "technicians": [
+    {
+      "id": "9mt6dztf",
+      "pin": "0000",
+      "name": "Sam",
+      "canEdit": true,
+      "canView": [
+        "9mt6dztf"
+      ]
+    },
+    {
+      "id": "n1zposo1",
+      "pin": "1111",
+      "name": "阿肥",
+      "canEdit": true,
+      "canView": [
+        "n1zposo1"
+      ]
+    }
+  ],
+  "serviceTypes": [
+    {
+      "bg": "#eff6ff",
+      "id": "mt",
+      "color": "#2563eb",
+      "label": "定期保養"
+    },
+    {
+      "bg": "#fdf4ff",
+      "id": "cl",
+      "color": "#a21caf",
+      "label": "清洗服務"
+    },
+    {
+      "bg": "#ecfeff",
+      "id": "eg",
+      "color": "#0e7490",
+      "label": "工程施作"
+    },
+    {
+      "bg": "#fef2f2",
+      "id": "ur",
+      "color": "#dc2626",
+      "label": "臨時急件"
+    }
+  ]
 }
